@@ -2,18 +2,27 @@
 
 package "ScreenshotCompare" {
     class MainWindow {
-        + m_startStopButton: QPushButton
-        + m_gridView: QGridView
+        - m_startStopButton: QPushButton
+        - m_gridLayout: QGridLayout
+        - m_statusLabel: QLabel
+        - m_screenshotService: ScreenshotService
+        - m_databaseModule: DatabaseModule
         + onStartStopClicked(): void
+        + onNewScreenshotTaken(image: QImage, similarity: double): void
         + updateGridView(image: QImage, similarity: double): void
+        + saveScreenshotToDatabase(image: QImage, similarity: double): void
+        + loadScreenshotsFromDatabase(): void
     }
 
     class ScreenshotService {
-        - timer: QTimer
+        - captureTimer: QTimer
         - lastScreenshot: QImage
-        - compareThread: QThread
+        - similarityWatcher: QFutureWatcher<double>
+        + startCapturing(): void
+        + stopCapturing(): void
         + captureScreen(): void
-        + scheduleComparison(newScreenshot: QImage): void
+        + handleSimilarityCalculationFinished(): void
+        + newScreenshotTaken(screenshot: QImage, similarity: double)
     }
 
     class ImageComparisonModule {
@@ -21,9 +30,12 @@ package "ScreenshotCompare" {
     }
 
     class DatabaseModule {
-        - dbConnection: QSqlDatabase
-        + saveScreenshot(image: QImage, similarity: double): void
-        + loadScreenshots(): QMap<QImage, double>
+        - m_database: QSqlDatabase
+        - m_connectionName: QString
+        + openDatabase(): bool
+        + createTableIfNeeded(): void
+        + saveScreenshot(image: QImage, similarity: double): bool
+        + loadScreenshots(): QMap<int, QPair<QImage, double>>
     }
 
 }

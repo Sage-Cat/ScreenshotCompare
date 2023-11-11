@@ -7,7 +7,7 @@
 
 #include "image_comparison_module.hpp"
 
-const std::chrono::seconds ScreenshotService::DEFAULT_TIME_INTERVAL{5};
+const std::chrono::seconds ScreenshotService::DEFAULT_TIME_INTERVAL{60};
 
 ScreenshotService::ScreenshotService(QObject *parent)
     : QObject(parent),

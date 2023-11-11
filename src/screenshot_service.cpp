@@ -1,24 +1,24 @@
 #include "screenshot_service.hpp"
 
+#include <QPixMap>
+#include <QtConcurrent/QtConcurrent>
 #include <QScreen>
 #include <QGuiApplication>
-#include <QDesktopWidget>
-#include <QWindow>
 
 #include "image_comparison_module.hpp"
 
-ScreenshotService::ScreenshotService(QObject *parent) : QObject(parent),
-                                                        captureTimer(new QTimer(this))
+const std::chrono::seconds ScreenshotService::DEFAULT_TIME_INTERVAL{5};
+
+ScreenshotService::ScreenshotService(QObject *parent)
+    : QObject(parent),
+      captureTimer(new QTimer(this))
 {
-    // Set up the timer with an interval and connect it to the captureScreen slot
-    captureTimer->setInterval(60000); // Set to 60000ms for 1 minute intervals
+    captureTimer->setInterval(std::chrono::duration_cast<std::chrono::milliseconds>(DEFAULT_TIME_INTERVAL).count());
     connect(captureTimer, &QTimer::timeout, this, &ScreenshotService::captureScreen);
+    connect(&similarityWatcher, &QFutureWatcher<double>::finished, this, &ScreenshotService::handleSimilarityCalculationFinished);
 }
 
-ScreenshotService::~ScreenshotService()
-{
-    // Clean up if needed
-}
+ScreenshotService::~ScreenshotService() = default;
 
 void ScreenshotService::startCapturing()
 {
@@ -28,29 +28,34 @@ void ScreenshotService::startCapturing()
 void ScreenshotService::stopCapturing()
 {
     captureTimer->stop();
+    similarityWatcher.waitForFinished();
 }
 
 void ScreenshotService::captureScreen()
 {
     QScreen *screen = QGuiApplication::primaryScreen();
-    if (!screen)
+    if (screen == nullptr)
+    {
         return;
+    }
 
     QImage screenshot = screen->grabWindow(0).toImage();
 
-    // Here you would have your logic to compare `screenshot` with `lastScreenshot`
-    // For now, let's just emit the signal with a dummy similarity value
-    double similarity = 0.0; // Replace with actual calculation
     if (!lastScreenshot.isNull())
     {
-        similarity = calculateSimilarity(screenshot, lastScreenshot);
+        QFuture<double> future = QtConcurrent::run(ImageComparisonModule::calculateSimilarity, screenshot, lastScreenshot);
+        similarityWatcher.setFuture(future);
+    }
+    else
+    {
+        emit newScreenshotTaken(screenshot, 0.0);
     }
 
-    emit newScreenshotTaken(screenshot, similarity);
-    lastScreenshot = screenshot;
+    lastScreenshot = std::move(screenshot);
 }
 
-double ScreenshotService::calculateSimilarity(const QImage &image1, const QImage &image2)
+void ScreenshotService::handleSimilarityCalculationFinished()
 {
-    return ImageComparisonModule::calculateSimilarity(image1, image2);
+    double similarity = similarityWatcher.result();
+    emit newScreenshotTaken(lastScreenshot, similarity);
 }

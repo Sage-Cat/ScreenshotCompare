@@ -1,100 +1,103 @@
 #include "mainwindow.hpp"
 
-MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent),
-                                          m_startStopButton(new QPushButton("Start", this)),
-                                          m_gridLayout(new QGridLayout()),
-                                          m_statusLabel(new QLabel("Ready", this)),
-                                          m_screenshotService(new ScreenshotService(this)),
-                                          m_databaseModule(new DatabaseModule(this))
+#include <QVBoxLayout>
+#include <QScrollArea>
+#include <QDebug>
+
+#include "screenshot_service.hpp"
+#include "database_module.hpp"
+
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent),
+      m_startStopButton(new QPushButton(tr("Start"), this)),
+      m_gridLayout(new QGridLayout()),
+      m_statusLabel(new QLabel(tr("Ready"), this)),
+      m_screenshotService(new ScreenshotService(this)),
+      m_databaseModule(new DatabaseModule(this))
 {
-    // Set up the main window layout
     QWidget *centralWidget = new QWidget(this);
     QVBoxLayout *mainLayout = new QVBoxLayout(centralWidget);
 
-    // Set up the start/stop button
     connect(m_startStopButton, &QPushButton::clicked, this, &MainWindow::onStartStopClicked);
     mainLayout->addWidget(m_startStopButton);
 
-    // Set up the status label
+    m_statusLabel->setMaximumHeight(20);
     mainLayout->addWidget(m_statusLabel);
 
-    // Set up the grid layout for displaying screenshots
+    resize(800, 600);
+
     QWidget *gridWidget = new QWidget();
+    m_gridLayout->setSpacing(10);
     gridWidget->setLayout(m_gridLayout);
     mainLayout->addWidget(gridWidget);
 
     setCentralWidget(centralWidget);
 
-    // Connect ScreenshotService
     connect(m_screenshotService, &ScreenshotService::newScreenshotTaken, this, &MainWindow::onNewScreenshotTaken);
 
-    // Load existing screenshots from database
     loadScreenshotsFromDatabase();
 }
 
-MainWindow::~MainWindow()
-{
-    // Clean up if needed
-}
+MainWindow::~MainWindow() {}
 
 void MainWindow::onStartStopClicked()
 {
-    if (m_startStopButton->text() == "Start")
+    const QString startText = tr("Start");
+    const QString stopText = tr("Stop");
+    const QString capturingText = tr("Capturing...");
+    const QString stoppedText = tr("Stopped");
+
+    if (m_startStopButton->text() == startText)
     {
-        m_startStopButton->setText("Stop");
-        m_statusLabel->setText("Capturing...");
-        m_screenshotService->startCapturing(); // Start capturing screenshots
+        m_startStopButton->setText(stopText);
+        m_statusLabel->setText(capturingText);
+        m_screenshotService->startCapturing();
     }
     else
     {
-        m_startStopButton->setText("Start");
-        m_statusLabel->setText("Stopped");
-        m_screenshotService->stopCapturing(); // Stop capturing screenshots
+        m_startStopButton->setText(startText);
+        m_statusLabel->setText(stoppedText);
+        m_screenshotService->stopCapturing();
     }
 }
 
 void MainWindow::onNewScreenshotTaken(const QImage &screenshot, double similarity)
 {
-    // Update the UI with the new screenshot
     updateGridView(screenshot, similarity);
-
-    // Save the new screenshot to the database
     saveScreenshotToDatabase(screenshot, similarity);
 }
 
 void MainWindow::updateGridView(const QImage &screenshot, double similarity)
 {
-    // Convert the QImage to a QPixmap for display in the grid
-    QPixmap pixmap = QPixmap::fromImage(screenshot.scaled(100, 100, Qt::KeepAspectRatio, Qt::SmoothTransformation)); // Adjust size as needed
+    // Calculate the position for the new image in the grid
+    int imageCount = m_gridLayout->count();
+    int row = imageCount / 5;
+    int col = imageCount % 5;
+
+    // Prepare the image and the similarity label
+    QPixmap pixmap = QPixmap::fromImage(screenshot.scaled(150, 150, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     QLabel *imageLabel = new QLabel();
     imageLabel->setPixmap(pixmap);
+    imageLabel->setAlignment(Qt::AlignCenter);
 
-    QLabel *similarityLabel = new QLabel(QString::number(similarity) + "%");
+    QLabel *similarityLabel = new QLabel(QString::asprintf("%.2f%%", similarity));
+    similarityLabel->setAlignment(Qt::AlignCenter);
 
-    // Assuming you have a predefined layout, we add the new screenshot and similarity label to it
-    // Clear the layout first to make room for the new screenshot at position 1
-    QLayoutItem *child;
-    while ((child = m_gridLayout->takeAt(0)) != nullptr)
-    {
-        delete child->widget(); // Delete the widget to prevent memory leak
-        delete child;
-    }
+    // Group them in a container widget
+    QWidget *containerWidget = new QWidget();
+    QVBoxLayout *containerLayout = new QVBoxLayout(containerWidget);
+    containerLayout->addWidget(imageLabel);
+    containerLayout->addWidget(similarityLabel);
+    containerWidget->setStyleSheet("border: 1px solid black;");
 
-    // Add the new image and similarity label at the beginning
-    m_gridLayout->addWidget(imageLabel, 0, 0);      // Add the image label at the first row and column
-    m_gridLayout->addWidget(similarityLabel, 0, 1); // Add the similarity label next to it
-
-    // Now, repopulate the grid with the rest of the thumbnails
-    // This will be handled by another function that maintains a list of thumbnails
-    // repopulateGrid();
+    // Add the container to the grid
+    m_gridLayout->addWidget(containerWidget, row, col);
 }
 
 void MainWindow::saveScreenshotToDatabase(const QImage &screenshot, double similarity)
 {
     if (!m_databaseModule->saveScreenshot(screenshot, similarity))
-    {
-        // Handle error - could not save screenshot
-    }
+        qWarning() << "Could not save screenshot to database";
 }
 
 void MainWindow::loadScreenshotsFromDatabase()
@@ -102,8 +105,6 @@ void MainWindow::loadScreenshotsFromDatabase()
     auto screenshots = m_databaseModule->loadScreenshots();
     for (auto it = screenshots.constBegin(); it != screenshots.constEnd(); ++it)
     {
-        // Add each screenshot to the grid view
-        // You will need to create a method to add screenshots to the grid
         const QImage &image = it.value().first;
         double similarity = it.value().second;
         updateGridView(image, similarity);

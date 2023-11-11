@@ -5,15 +5,9 @@
 #include <QPushButton>
 #include <QGridLayout>
 #include <QLabel>
-#include "screenshot_service.hpp"
-#include "database_module.hpp"
 
-QT_BEGIN_NAMESPACE
-namespace Ui
-{
-    class MainWindow;
-}
-QT_END_NAMESPACE
+class ScreenshotService;
+class DatabaseModule;
 
 class MainWindow : public QMainWindow
 {
@@ -21,22 +15,22 @@ class MainWindow : public QMainWindow
 
 public:
     explicit MainWindow(QWidget *parent = nullptr);
-    ~MainWindow();
+    ~MainWindow() override;
 
 private slots:
     void onStartStopClicked();
     void onNewScreenshotTaken(const QImage &screenshot, double similarity);
+
+private:
     void updateGridView(const QImage &image, double similarity);
     void saveScreenshotToDatabase(const QImage &screenshot, double similarity);
     void loadScreenshotsFromDatabase();
 
-private:
-    Ui::MainWindow *ui;
-    QPushButton *m_startStopButton;
-    QGridLayout *m_gridLayout;
-    QLabel *m_statusLabel;
-    ScreenshotService *m_screenshotService;
-    DatabaseModule *m_databaseModule;
+    QPushButton *m_startStopButton{nullptr};
+    QGridLayout *m_gridLayout{nullptr};
+    QLabel *m_statusLabel{nullptr};
+    ScreenshotService *m_screenshotService{nullptr};
+    DatabaseModule *m_databaseModule{nullptr};
 };
 
 #endif // MAINWINDOW_HPP

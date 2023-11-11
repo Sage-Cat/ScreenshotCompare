@@ -28,7 +28,6 @@ void TestMainWindow::cleanupTestCase()
 
 void TestMainWindow::testButtonStartStop()
 {
-    // Verify the button's text changes from "Start" to "Stop" and vice versa when clicked
     QPushButton *button = mainWindow->findChild<QPushButton *>();
     QVERIFY(button);
 

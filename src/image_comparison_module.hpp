@@ -7,6 +7,7 @@
 class ImageComparisonModule
 {
 public:
+    // Method does simple pixel-by-pixel comparison
     static double calculateSimilarity(const QImage &image1, const QImage &image2);
 };
 

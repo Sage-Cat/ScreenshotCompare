@@ -4,12 +4,16 @@
 #include <QObject>
 #include <QTimer>
 #include <QImage>
+#include <QFutureWatcher>
+#include <chrono>
 
 class ScreenshotService : public QObject
 {
     Q_OBJECT
 
 public:
+    static const std::chrono::seconds DEFAULT_TIME_INTERVAL;
+
     explicit ScreenshotService(QObject *parent = nullptr);
     ~ScreenshotService();
 
@@ -19,13 +23,16 @@ public:
 signals:
     void newScreenshotTaken(const QImage &screenshot, double similarity);
 
-private slots:
+public slots:
     void captureScreen();
 
+private slots:
+    void handleSimilarityCalculationFinished();
+
 private:
-    QTimer *captureTimer;
+    QTimer *captureTimer{nullptr};
     QImage lastScreenshot;
-    double calculateSimilarity(const QImage &image1, const QImage &image2);
+    QFutureWatcher<double> similarityWatcher;
 };
 
 #endif // SCREENSHOT_SERVICE_HPP

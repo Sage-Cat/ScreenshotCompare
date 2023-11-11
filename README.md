@@ -21,8 +21,6 @@ Ensure you have the following installed:
 - A C++ compiler (GCC for Linux, MinGW for Windows)
 - Git
 
-**Important**: Verify that the paths to Qt, CMake, and your compiler are added to your system's PATH environment variable.
-
 ### Clone the Repository
 
 Clone ScreenshotCompare to your local machine:

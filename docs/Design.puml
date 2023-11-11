@@ -1,0 +1,36 @@
+@startuml
+
+package "ScreenshotCompare" {
+    class MainWindow {
+        + m_startStopButton: QPushButton
+        + m_gridView: QGridView
+        + onStartStopClicked(): void
+        + updateGridView(image: QImage, similarity: double): void
+    }
+
+    class ScreenshotService {
+        - timer: QTimer
+        - lastScreenshot: QImage
+        - compareThread: QThread
+        + captureScreen(): void
+        + scheduleComparison(newScreenshot: QImage): void
+    }
+
+    class ImageComparisonModule {
+        + calculateSimilarity(image1: QImage, image2: QImage): double
+    }
+
+    class DatabaseModule {
+        - dbConnection: QSqlDatabase
+        + saveScreenshot(image: QImage, similarity: double): void
+        + loadScreenshots(): QMap<QImage, double>
+    }
+
+}
+
+MainWindow -right-> ScreenshotService : uses
+ScreenshotService -down-> ImageComparisonModule : delegates comparison
+ImageComparisonModule -down-> DatabaseModule : sends results
+DatabaseModule -left-> MainWindow : provides data on startup
+
+@enduml

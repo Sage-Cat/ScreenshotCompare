@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QSqlDatabase>
 #include <QImage>
+#include <QMap>
 
 class DatabaseModule : public QObject
 {

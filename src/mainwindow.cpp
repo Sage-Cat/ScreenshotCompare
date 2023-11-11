@@ -89,15 +89,6 @@ void MainWindow::updateGridView(const QImage &screenshot, double similarity)
     // repopulateGrid();
 }
 
-void MainWindow::onNewScreenshotTaken(const QImage &screenshot, double similarity)
-{
-    // Update the UI with the new screenshot
-    updateGridView(screenshot, similarity);
-
-    // Save the new screenshot to the database
-    saveScreenshotToDatabase(screenshot, similarity);
-}
-
 void MainWindow::saveScreenshotToDatabase(const QImage &screenshot, double similarity)
 {
     if (!m_databaseModule->saveScreenshot(screenshot, similarity))

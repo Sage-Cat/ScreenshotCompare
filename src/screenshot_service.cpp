@@ -1,7 +1,11 @@
 #include "screenshot_service.hpp"
+
 #include <QScreen>
 #include <QGuiApplication>
 #include <QDesktopWidget>
+#include <QWindow>
+
+#include "image_comparison_module.hpp"
 
 ScreenshotService::ScreenshotService(QObject *parent) : QObject(parent),
                                                         captureTimer(new QTimer(this))
@@ -29,8 +33,6 @@ void ScreenshotService::stopCapturing()
 void ScreenshotService::captureScreen()
 {
     QScreen *screen = QGuiApplication::primaryScreen();
-    if (const QWindow *window = windowHandle())
-        screen = window->screen();
     if (!screen)
         return;
 
@@ -50,7 +52,5 @@ void ScreenshotService::captureScreen()
 
 double ScreenshotService::calculateSimilarity(const QImage &image1, const QImage &image2)
 {
-    // Implement your algorithm to calculate similarity between two images
-    // Placeholder for similarity calculation
-    return 0.0; // Replace with actual similarity value
+    return ImageComparisonModule::calculateSimilarity(image1, image2);
 }

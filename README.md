@@ -55,7 +55,7 @@ ctest --verbose
 
 ## Documentation
 
-### Run demonstration
+### Work demonstration
 
 It's enough just to click on Start button and it will start the process of screenshoting and comparing
 
